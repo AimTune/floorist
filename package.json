@@ -1,6 +1,6 @@
 {
   "name": "floorist",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Dependency-free web component for drawing and editing real-world floor plans — multi-floor buildings, tables, chairs, doors, windows, A/C, custom images — with attachable actions, doors/windows that snap to walls, and a custom JSON format.",
   "type": "module",
   "main": "./dist/index.js",
