@@ -9,9 +9,12 @@ jobs:
   publish:
     name: Build · Publish
     runs-on: ubuntu-latest
+    # Trusted publishing via OIDC — no NPM_TOKEN secret required.
+    # The npm package "floorist" is configured to trust this repo + workflow.
+    # https://docs.npmjs.com/trusted-publishers
     permissions:
       contents: read
-      id-token: write    # for npm provenance
+      id-token: write
     steps:
       - uses: actions/checkout@v4
 
@@ -21,6 +24,11 @@ jobs:
           registry-url: 'https://registry.npmjs.org'
           cache: 'npm'
 
+      # OIDC trusted publishing requires npm CLI ≥ 11.5 — Node 22 ships with
+      # npm 10, so bump it explicitly before invoking publish.
+      - name: Upgrade npm to a version that supports OIDC publishing
+        run: npm install -g npm@latest
+
       - run: npm ci
 
       - name: Build + tests + coverage
@@ -29,7 +37,5 @@ jobs:
       - name: Sanity-check package contents
         run: npm pack --dry-run
 
-      - name: Publish
+      - name: Publish (OIDC trusted publisher)
         run: npm publish --access public --provenance
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
