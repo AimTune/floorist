@@ -11,7 +11,14 @@ jobs:
     runs-on: ubuntu-latest
     # Trusted publishing via OIDC — no NPM_TOKEN secret required.
     # The npm package "floorist" is configured to trust this repo + workflow.
+    # The `environment:` below makes the GitHub OIDC token carry an
+    # `environment: NPM_TOKEN` claim so its `sub` becomes
+    # `repo:AimTune/floorist:environment:NPM_TOKEN`, matching the
+    # "Environment name: NPM_TOKEN" field on the npm Trusted Publisher.
+    # The GitHub Environment named "NPM_TOKEN" must exist under
+    # Settings → Environments (no secrets required inside it).
     # https://docs.npmjs.com/trusted-publishers
+    environment: NPM_TOKEN
     permissions:
       contents: read
       id-token: write
