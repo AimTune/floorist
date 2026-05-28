@@ -4,7 +4,7 @@
 // HTML comment markers. Idempotent — safe to re-run on every build.
 import { readFile, writeFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
-import { dirname, join, relative } from 'node:path';
+import { dirname, join } from 'node:path';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const LCOV = join(ROOT, 'coverage.lcov');
@@ -45,20 +45,8 @@ async function parseLcov(text) {
 }
 
 function renderTable(records) {
-  // group by directory under dist/
-  const rows = records
-    .map((r) => {
-      const file = relative(ROOT, r.file).replace(/^dist\//, '');
-      return {
-        file,
-        lines: pct(r.lh, r.lf),
-        branches: pct(r.brh, r.brf),
-        funcs: pct(r.fnh, r.fnf),
-        ...r,
-      };
-    })
-    .sort((a, b) => a.file.localeCompare(b.file));
-
+  // sum up totals across every covered file; details aren't exposed in the
+  // README — just a single coverage badge sits between the markers.
   const total = records.reduce(
     (acc, r) => ({
       lf: acc.lf + r.lf, lh: acc.lh + r.lh,
@@ -71,32 +59,12 @@ function renderTable(records) {
   const tBranches = pct(total.brh, total.brf);
   const tFuncs = pct(total.fnh, total.fnf);
 
-  const headerRow = '| File | Lines | Branches | Functions |';
-  const sepRow = '| :--- | ---: | ---: | ---: |';
-  const dataRows = rows.map(
-    (r) => `| \`${r.file}\` | ${fmt(r.lines)} | ${fmt(r.branches)} | ${fmt(r.funcs)} |`,
-  );
-  const totalRow = `| **All covered modules** | **${fmt(tLines)}** | **${fmt(tBranches)}** | **${fmt(tFuncs)}** |`;
-
-  const headlineBadge = `![coverage](https://img.shields.io/badge/coverage-${fmt(tLines).replace(
+  const badge = `![coverage](https://img.shields.io/badge/coverage-${fmt(tLines).replace(
     '%',
     '%25',
   )}-${badgeColor(tLines)})`;
 
-  const block = [
-    headlineBadge,
-    '',
-    `*Last updated by \`npm run build\` — ${rows.length} covered module(s).*`,
-    '',
-    headerRow,
-    sepRow,
-    ...dataRows,
-    totalRow,
-    '',
-    '> Files not in this table (\`dist/component/\`, \`dist/render/\`, \`dist/editor/controller.js\`) are browser-only — they need DOM/Canvas and are exercised by the headless smoke test, not by `npm test`.',
-  ].join('\n');
-
-  return { block, totals: { lines: tLines, branches: tBranches, funcs: tFuncs } };
+  return { block: badge, totals: { lines: tLines, branches: tBranches, funcs: tFuncs } };
 }
 
 async function main() {
