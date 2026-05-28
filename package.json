@@ -51,11 +51,11 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/aimtune/floorist.git"
+    "url": "git+https://github.com/AimTune/floorist.git"
   },
-  "homepage": "https://github.com/aimtune/floorist#readme",
+  "homepage": "https://github.com/AimTune/floorist#readme",
   "bugs": {
-    "url": "https://github.com/aimtune/floorist/issues"
+    "url": "https://github.com/AimTune/floorist/issues"
   },
   "sideEffects": [
     "./dist/component/floor-plan.js"
