@@ -1,7 +1,7 @@
 # 🏠 floorist
 
 <!-- badges-start -->
-![build](https://img.shields.io/badge/build-passing-brightgreen) ![types](https://img.shields.io/badge/types-TypeScript-blue) ![license](https://img.shields.io/badge/license-MIT-blue)
+[![demo](https://img.shields.io/badge/live%20demo-floorist.aimtune.dev-2f7df6)](https://floorist.aimtune.dev/) [![npm](https://img.shields.io/npm/v/floorist?color=cb3837&label=npm)](https://www.npmjs.com/package/floorist) ![build](https://img.shields.io/badge/build-passing-brightgreen) ![types](https://img.shields.io/badge/types-TypeScript-blue) ![license](https://img.shields.io/badge/license-MIT-blue)
 <!-- badges-end -->
 
 <!-- coverage-start -->
@@ -35,6 +35,10 @@ just a picture of it.
 ```
 
 ## Demo
+
+**Try it now:** [floorist.aimtune.dev](https://floorist.aimtune.dev/) — no install, samples + editor in the browser.
+
+Or run it locally:
 
 ```bash
 npm install      # one-off, just installs the TypeScript dev dependency
