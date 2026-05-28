@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>floorist — demo</title>
+  <style>
+    * { box-sizing: border-box; }
+    html, body { height: 100%; margin: 0; }
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      color: #1f2328;
+      background: #eef0f3;
+      display: grid;
+      grid-template-rows: auto 1fr;
+      height: 100vh;
+    }
+    header {
+      display: flex; align-items: center; gap: 12px;
+      padding: 10px 16px;
+      background: #1f2937; color: #fff;
+      flex-wrap: wrap;
+    }
+    header h1 { font-size: 16px; margin: 0; font-weight: 700; letter-spacing: .2px; }
+    header .badge { font-size: 11px; background: #374151; padding: 2px 8px; border-radius: 99px; color: #cbd5e1; }
+    header .spacer { flex: 1; }
+    label.field { font-size: 12px; color: #cbd5e1; display: inline-flex; align-items: center; gap: 6px; }
+    select, button {
+      font: inherit; font-size: 13px;
+      border-radius: 7px; border: 1px solid #3a4453;
+      background: #2b3442; color: #e7ebf0;
+      padding: 6px 10px; cursor: pointer;
+    }
+    button:hover { background: #354152; }
+    button.primary { background: #2f7df6; border-color: #2f7df6; }
+    button.primary:hover { background: #2f6fe0; }
+    button.active { background: #2f7df6; border-color: #2f7df6; color: #fff; }
+    .seg { display: inline-flex; border: 1px solid #3a4453; border-radius: 7px; overflow: hidden; }
+    .seg button { border: 0; border-radius: 0; }
+
+    main { display: flex; min-height: 0; min-width: 0; }
+    aside {
+      background: #f7f8fa; border-right: 1px solid #e2e6ec;
+      flex: 0 0 210px; overflow-y: auto; padding: 12px;
+      display: flex; flex-direction: column; gap: 14px;
+    }
+    aside.right { border-right: 0; border-left: 1px solid #e2e6ec; flex: 0 0 270px; }
+    aside.hidden { display: none; }
+    .panel-title { font-size: 11px; text-transform: uppercase; letter-spacing: .6px; color: #6b7280; margin: 0 0 6px; }
+    .palette { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+    .palette button {
+      display: flex; flex-direction: column; align-items: center; gap: 3px;
+      background: #fff; color: #374151; border: 1px solid #e2e6ec;
+      padding: 8px 4px; font-size: 10px; line-height: 1.1;
+    }
+    .palette button:hover { border-color: #2f7df6; background: #f0f6ff; }
+    .palette button .ico { font-size: 20px; }
+
+    .stage { position: relative; flex: 1 1 auto; min-width: 0; min-height: 0; }
+    floor-plan { position: absolute; inset: 0; }
+
+    .legend { display: flex; flex-direction: column; gap: 6px; font-size: 12px; }
+    .legend .row { display: flex; align-items: center; gap: 8px; }
+    .dot { width: 12px; height: 12px; border-radius: 50%; border: 1px solid rgba(0,0,0,.15); }
+
+    .props label { display: block; font-size: 11px; color: #6b7280; margin: 8px 0 2px; }
+    .props input, .props select {
+      width: 100%; background: #fff; color: #1f2328; border: 1px solid #d8dde4;
+      border-radius: 6px; padding: 5px 7px; font-size: 13px;
+    }
+    .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+
+    .log {
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11px;
+      background: #0f1620; color: #9fe6b8; border-radius: 8px; padding: 8px;
+      height: 150px; overflow: auto; white-space: pre-wrap; line-height: 1.45;
+    }
+    .log .ev { color: #7fb6ff; }
+    .hint { font-size: 11px; color: #6b7280; line-height: 1.5; }
+    .stat { font-size: 12px; color: #4b5563; }
+    code { background: #eceef1; padding: 1px 5px; border-radius: 4px; font-size: 11px; }
+
+    /* host-rendered context menu (opened on right-click of an element) */
+    #ctxmenu {
+      position: fixed; z-index: 50; min-width: 150px;
+      background: #fff; border: 1px solid #d8dde4; border-radius: 8px;
+      box-shadow: 0 10px 30px rgba(0,0,0,.18); padding: 4px; display: none;
+      font-size: 13px;
+    }
+    #ctxmenu .mi { padding: 7px 10px; border-radius: 6px; cursor: pointer; display: flex; gap: 8px; align-items: center; }
+    #ctxmenu .mi:hover { background: #eef4ff; }
+    #ctxmenu .mi.danger:hover { background: #ffeceb; color: #c62828; }
+    #ctxmenu .sep { height: 1px; background: #eef0f3; margin: 4px 2px; }
+    #ctxmenu .head { padding: 6px 10px 2px; font-size: 11px; color: #8a93a0; text-transform: uppercase; letter-spacing: .5px; }
+
+    /* floor switcher (overlay, top-center of the stage) */
+    .floorbar {
+      position: absolute; top: 12px; left: 50%; transform: translateX(-50%);
+      z-index: 8; display: flex; gap: 4px; padding: 4px;
+      background: rgba(255,255,255,.94); border: 1px solid #e2e6ec;
+      border-radius: 10px; box-shadow: 0 4px 14px rgba(0,0,0,.1); max-width: 90%;
+      overflow-x: auto;
+    }
+    .floorbar button {
+      background: transparent; border: 0; color: #45505f; border-radius: 7px;
+      padding: 6px 12px; cursor: pointer; white-space: nowrap; font-size: 13px;
+    }
+    .floorbar button:hover { background: #eef2f7; }
+    .floorbar button.active { background: #2f7df6; color: #fff; }
+    .floorbar .add { font-weight: 700; color: #2f7df6; }
+
+    /* room navigator list */
+    .roomlist { display: flex; flex-direction: column; gap: 3px; }
+    .roomlist button {
+      text-align: left; background: #fff; border: 1px solid #e2e6ec; color: #374151;
+      border-radius: 6px; padding: 6px 9px; cursor: pointer; font-size: 12px;
+      display: flex; gap: 7px; align-items: center;
+    }
+    .roomlist button:hover { border-color: #2f7df6; background: #f0f6ff; }
+    .roomlist .empty { font-size: 11px; color: #9aa1ab; }
+
+    /* share popover */
+    #sharePanel {
+      position: fixed; z-index: 60; right: 16px; top: 54px; width: 360px;
+      background: #fff; border: 1px solid #d8dde4; border-radius: 10px;
+      box-shadow: 0 16px 44px rgba(0,0,0,.22); padding: 14px; display: none;
+      font-size: 13px;
+    }
+    #sharePanel h3 { margin: 0 0 8px; font-size: 14px; }
+    #sharePanel .scope { display: flex; gap: 6px; margin-bottom: 10px; }
+    #sharePanel .scope label { flex: 1; border: 1px solid #d8dde4; border-radius: 7px; padding: 7px; text-align: center; cursor: pointer; font-size: 12px; }
+    #sharePanel .scope input { display: none; }
+    #sharePanel .scope input:checked + span { font-weight: 700; color: #2f7df6; }
+    #sharePanel .actions { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+    #sharePanel .actions button { background: #f2f5f9; border: 1px solid #e2e6ec; color: #1f2328; border-radius: 7px; padding: 8px; cursor: pointer; font-size: 12px; }
+    #sharePanel .actions button:hover { background: #e8eef6; }
+    #sharePanel textarea { width: 100%; margin-top: 9px; height: 64px; font-family: ui-monospace, monospace; font-size: 10px; border: 1px solid #d8dde4; border-radius: 7px; padding: 6px; resize: vertical; }
+    #sharePanel .ok { color: #1f8a4c; font-size: 11px; min-height: 14px; margin-top: 5px; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>🏠 floorist</h1>
+    <span class="badge">dependency-free web component</span>
+    <label class="field">Demo
+      <select id="sampleSelect"></select>
+    </label>
+    <div class="seg" id="modeSeg">
+      <button data-mode="view" class="active">👁 View</button>
+      <button data-mode="edit">✏️ Edit</button>
+    </div>
+    <div class="spacer"></div>
+    <button id="fitBtn">⤢ Fit</button>
+    <button id="zoomInBtn">＋</button>
+    <button id="zoomOutBtn">－</button>
+    <button id="undoBtn">↶ Undo</button>
+    <button id="redoBtn">Redo ↷</button>
+    <button id="importBtn">⬆ Import</button>
+    <button id="shareBtn">🔗 Share</button>
+    <button id="exportBtn" class="primary">⬇ Export</button>
+    <input id="fileInput" type="file" accept="application/json,.json,.floorist" style="display:none" aria-label="Import JSON file" />
+  </header>
+
+  <main>
+    <aside id="leftPanel" class="hidden">
+      <div>
+        <p class="panel-title">Add element</p>
+        <div class="palette" id="palette"></div>
+      </div>
+      <p class="hint">Click an item to drop it in the view. Then drag to move, use corner handles to resize, <code>Delete</code> to remove, <code>⌘/Ctrl+D</code> to duplicate, arrows to nudge.</p>
+    </aside>
+
+    <div class="stage">
+      <div class="floorbar" id="floorbar"></div>
+      <floor-plan id="drawer" mode="view" grid-snap="0"></floor-plan>
+    </div>
+
+    <aside class="right">
+      <div>
+        <p class="panel-title">Selected / Last clicked</p>
+        <div id="props" class="props"><p class="hint"><b>Hover</b> an element for a tooltip · <b>click</b> tables/doors/A-C to run their JSON action · <b>right-click</b> for a host menu. The “VIP” table has a listener attached <i>by id</i> from JS.</p></div>
+      </div>
+      <div>
+        <p class="panel-title">Rooms (click to focus)</p>
+        <div class="roomlist" id="roomlist"></div>
+      </div>
+      <div>
+        <p class="panel-title">Seat status</p>
+        <div class="legend">
+          <div class="row"><span class="dot" style="background:#34c759"></span> available</div>
+          <div class="row"><span class="dot" style="background:#ff9f0a"></span> reserved</div>
+          <div class="row"><span class="dot" style="background:#ff3b30"></span> occupied</div>
+        </div>
+      </div>
+      <div>
+        <p class="panel-title">Event log</p>
+        <div class="log" id="log"></div>
+      </div>
+      <div class="stat" id="stat"></div>
+    </aside>
+  </main>
+
+  <div id="ctxmenu"></div>
+
+  <div id="sharePanel">
+    <h3>🔗 Share</h3>
+    <div class="scope">
+      <label><input type="radio" name="scope" value="building" checked /><span>Whole building</span></label>
+      <label><input type="radio" name="scope" value="floor" /><span>Current floor</span></label>
+    </div>
+    <div class="actions">
+      <button data-act="download">⬇ Download JSON</button>
+      <button data-act="clipboard">📋 Copy JSON</button>
+      <button data-act="link">🔗 Copy link</button>
+      <button data-act="embed">&lt;/&gt; Copy embed</button>
+    </div>
+    <textarea id="shareOut" readonly placeholder="Generated link / embed appears here…"></textarea>
+    <div class="ok" id="shareOk"></div>
+  </div>
+
+  <script type="module">
+    // floorist is a TS library; demo loads the compiled output from dist/.
+    import './dist/index.js';
+    import { listTypes } from './dist/elements/registry.js';
+    import { parseShareHash, buildShareUrl, buildEmbedCode } from './dist/core/share.js';
+    import SAMPLES from './demo/samples.js';
+
+    const drawer = document.getElementById('drawer');
+    const sampleSelect = document.getElementById('sampleSelect');
+    const log = document.getElementById('log');
+    const stat = document.getElementById('stat');
+    const props = document.getElementById('props');
+    const leftPanel = document.getElementById('leftPanel');
+
+    // ---- sample selector ----
+    for (const s of SAMPLES) {
+      const opt = document.createElement('option');
+      opt.value = s.id;
+      opt.textContent = s.name;
+      sampleSelect.append(opt);
+    }
+    function loadSample(idx) {
+      const s = SAMPLES.find((x) => x.id === idx) || SAMPLES[0];
+      drawer.load(structuredClone(s.document));
+      logLine('load', s.name);
+      updateStat();
+    }
+    sampleSelect.addEventListener('change', () => loadSample(sampleSelect.value));
+
+    // ---- mode toggle ----
+    const modeSeg = document.getElementById('modeSeg');
+    function applyMode(mode) {
+      drawer.setMode(mode);
+      [...modeSeg.children].forEach((b) => b.classList.toggle('active', b.dataset.mode === mode));
+      leftPanel.classList.toggle('hidden', mode !== 'edit');
+      drawer.setAttribute('grid-snap', mode === 'edit' ? '5' : '0');
+      renderFloorbar();
+    }
+    modeSeg.addEventListener('click', (e) => {
+      const btn = e.target.closest('button[data-mode]');
+      if (btn) applyMode(btn.dataset.mode);
+    });
+
+    // ---- toolbar ----
+    document.getElementById('fitBtn').onclick = () => drawer.fitToContent();
+    document.getElementById('zoomInBtn').onclick = () => drawer.zoomIn();
+    document.getElementById('zoomOutBtn').onclick = () => drawer.zoomOut();
+    document.getElementById('undoBtn').onclick = () => drawer.undo();
+    document.getElementById('redoBtn').onclick = () => drawer.redo();
+    document.getElementById('exportBtn').onclick = () => {
+      const json = drawer.exportJSON();
+      const blob = new Blob([json], { type: 'application/json' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `${drawer.getDocument().meta.name || 'floorplan'}.floorist.json`;
+      a.click();
+      URL.revokeObjectURL(a.href);
+      logLine('export', `${json.length} bytes`);
+    };
+
+    // ---- palette (built from the registry) ----
+    const palette = document.getElementById('palette');
+    const CATEGORY_ORDER = ['structure', 'furniture', 'equipment', 'shape', 'misc'];
+    listTypes()
+      .sort((a, b) => CATEGORY_ORDER.indexOf(a.category) - CATEGORY_ORDER.indexOf(b.category))
+      .forEach((def) => {
+        const btn = document.createElement('button');
+        btn.innerHTML = `<span class="ico">${def.icon || '▫'}</span>${def.label}`;
+        btn.title = `${def.label} (${def.category})`;
+        btn.onclick = () => {
+          const created = drawer.addElementAtCenter({ type: def.type, label: def.label });
+          drawer.select(created.id);
+          logLine('add', def.type);
+          updateStat();
+        };
+        palette.append(btn);
+      });
+
+    // ---- selection → property panel ----
+    function renderProps(el) {
+      if (!el) {
+        props.innerHTML = '<p class="hint">Nothing selected.</p>';
+        return;
+      }
+      const statusOpts = ['available', 'reserved', 'occupied', 'disabled']
+        .map((s) => `<option ${el.props?.status === s ? 'selected' : ''}>${s}</option>`).join('');
+      props.innerHTML = `
+        <div class="stat"><b>${el.type}</b> · <code>${el.id}</code></div>
+        <label>Label</label><input id="p-label" value="${el.label ?? ''}" />
+        <div class="row2">
+          <div><label>X</label><input id="p-x" type="number" value="${Math.round(el.x)}" /></div>
+          <div><label>Y</label><input id="p-y" type="number" value="${Math.round(el.y)}" /></div>
+        </div>
+        <div class="row2">
+          <div><label>Width</label><input id="p-w" type="number" value="${Math.round(el.width)}" /></div>
+          <div><label>Height</label><input id="p-h" type="number" value="${Math.round(el.height)}" /></div>
+        </div>
+        <label>Rotation °</label><input id="p-rot" type="number" value="${Math.round(el.rotation || 0)}" />
+        ${'status' in (el.props || {}) ? `<label>Status</label><select id="p-status">${statusOpts}</select>` : ''}
+        ${'seats' in (el.props || {}) ? `<label>Seats</label><input id="p-seats" type="number" value="${el.props.seats}" />` : ''}
+      `;
+      const bind = (sel, fn) => { const e = props.querySelector(sel); if (e) e.oninput = () => fn(e.value); };
+      bind('#p-label', (v) => drawer.model.updateElement(el.id, { label: v }));
+      bind('#p-x', (v) => drawer.model.updateElement(el.id, { x: +v }));
+      bind('#p-y', (v) => drawer.model.updateElement(el.id, { y: +v }));
+      bind('#p-w', (v) => drawer.model.updateElement(el.id, { width: +v }));
+      bind('#p-h', (v) => drawer.model.updateElement(el.id, { height: +v }));
+      bind('#p-rot', (v) => drawer.model.updateElement(el.id, { rotation: +v }));
+      bind('#p-status', (v) => drawer.model.updateElement(el.id, { props: { status: v } }));
+      bind('#p-seats', (v) => drawer.model.updateElement(el.id, { props: { seats: +v } }));
+    }
+
+    // ---- events from the component ----
+    let logCount = 0;
+    function logLine(kind, msg) {
+      logCount++;
+      const num = String(logCount).padStart(2, '0');
+      log.insertAdjacentHTML('beforeend', `${num} <span class="ev">${kind}</span> ${msg}\n`);
+      log.scrollTop = log.scrollHeight;
+    }
+    function updateStat() {
+      const floor = drawer.model.activeFloor;
+      const fc = drawer.getFloors().length;
+      stat.textContent = `${floor.elements.length} elements · ${floor.layers.length} layers · ${fc} floor${fc > 1 ? 's' : ''} · ${floor.size.width}×${floor.size.height}`;
+    }
+
+    drawer.addEventListener('element-click', (e) => logLine('click', e.detail.element.type + ' ' + (e.detail.element.label || '')));
+    drawer.addEventListener('element-action', (e) => {
+      logLine('action', `${e.detail.kind} ${e.detail.prop ?? ''}=${e.detail.value ?? ''}`.trim());
+      if (e.detail.kind === 'link' && e.detail.url) logLine('link', e.detail.url);
+    });
+    drawer.addEventListener('selection-change', (e) => {
+      const id = e.detail.ids[0];
+      renderProps(id ? drawer.model.getElement(id) : null);
+    });
+    drawer.addEventListener('element-change', () => { updateStat(); const id = drawer.getSelection()[0]; if (id) renderProps(drawer.model.getElement(id)); });
+    drawer.addEventListener('change', updateStat);
+
+    // ====================================================================
+    // (1a) Canvas overlay — a highlight ring around the hovered element.
+    // ====================================================================
+    drawer.setOverlayRenderer((ctx, info) => {
+      const el = info.hoverElement;
+      if (!el) return;
+      const z = info.camera.zoom;
+      ctx.save();
+      ctx.strokeStyle = 'rgba(47,125,246,0.95)';
+      ctx.lineWidth = 2 / z;
+      ctx.setLineDash([6 / z, 4 / z]);
+      ctx.strokeRect(el.x - 5, el.y - 5, el.width + 10, el.height + 10);
+      ctx.restore();
+    });
+
+    // ====================================================================
+    // (1b) Custom HTML on hover — return rich markup (or an element). Falls
+    //      back to element.props.tooltip when this returns null.
+    // ====================================================================
+    const STATUS_COLOR = { available:'#34c759', reserved:'#ff9f0a', occupied:'#ff3b30', disabled:'#9b9b9b' };
+    drawer.setHoverContent((el) => {
+      const rows = [];
+      rows.push(`<div style="font-weight:700;margin-bottom:2px">${el.label || el.type}</div>`);
+      rows.push(`<div style="opacity:.7;font-size:11px">${el.type}</div>`);
+      if (el.props?.status)
+        rows.push(`<div style="margin-top:4px"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${STATUS_COLOR[el.props.status]||'#888'};margin-right:5px"></span>${el.props.status}</div>`);
+      if (el.props?.seats) rows.push(`<div>🪑 ${el.props.seats} seats</div>`);
+      if ('open' in (el.props||{})) rows.push(`<div>🚪 ${el.props.open ? 'open' : 'closed'}</div>`);
+      if ('on' in (el.props||{})) rows.push(`<div>❄️ ${el.props.on ? 'on' : 'off'}</div>`);
+      return rows.join('');
+    });
+
+    // ====================================================================
+    // (2) Open a host menu on right-click (element-contextmenu carries the
+    //     viewport coords so we can position a plain DOM menu).
+    // ====================================================================
+    const ctxmenu = document.getElementById('ctxmenu');
+    const closeMenu = () => { ctxmenu.style.display = 'none'; };
+    window.addEventListener('pointerdown', (e) => { if (!ctxmenu.contains(e.target)) closeMenu(); }, true);
+    window.addEventListener('blur', closeMenu);
+
+    function openMenu(detail) {
+      const el = drawer.model.getElement(detail.id);
+      if (!el) return;
+      const items = [];
+      if ('status' in (el.props || {})) {
+        items.push({ head: 'Set status' });
+        for (const s of ['available', 'reserved', 'occupied']) {
+          items.push({ label: s, dot: { available:'#34c759', reserved:'#ff9f0a', occupied:'#ff3b30' }[s],
+            run: () => drawer.model.updateElement(el.id, { props: { status: s } }) });
+        }
+        items.push({ sep: true });
+      }
+      if ('open' in (el.props || {})) {
+        items.push({ label: el.props.open ? 'Close door' : 'Open door',
+          run: () => drawer.model.updateElement(el.id, { props: { open: !el.props.open } }) });
+      }
+      if ('on' in (el.props || {})) {
+        items.push({ label: el.props.on ? 'Turn A/C off' : 'Turn A/C on',
+          run: () => drawer.model.updateElement(el.id, { props: { on: !el.props.on } }) });
+      }
+      // wall-mounted elements (doors / windows) — toggle snap-to-wall
+      if (['door', 'door-double', 'door-slide', 'window'].includes(el.type)) {
+        const freed = el.props?.snap === false;
+        items.push(
+          { sep: true },
+          {
+            label: freed ? '🔗 Snap to wall' : '⛓️ Free from wall',
+            run: () => drawer.model.updateElement(el.id, { props: { snap: freed } }),
+          },
+        );
+      }
+      items.push(
+        { sep: true },
+        { label: 'Duplicate', run: () => drawer.model.duplicate([el.id]) },
+        { label: 'Bring to front', run: () => drawer.model.reorder([el.id], 'front') },
+        { sep: true },
+        { label: 'Delete', danger: true, run: () => { drawer.model.removeElements([el.id]); drawer.clearSelection(); } },
+      );
+
+      ctxmenu.innerHTML = '';
+      ctxmenu.insertAdjacentHTML('beforeend', `<div class="head">${el.label || el.type}</div>`);
+      for (const it of items) {
+        if (it.sep) { ctxmenu.insertAdjacentHTML('beforeend', '<div class="sep"></div>'); continue; }
+        if (it.head) { ctxmenu.insertAdjacentHTML('beforeend', `<div class="head">${it.head}</div>`); continue; }
+        const node = document.createElement('div');
+        node.className = 'mi' + (it.danger ? ' danger' : '');
+        node.innerHTML = (it.dot ? `<span style="width:10px;height:10px;border-radius:50%;background:${it.dot}"></span>` : '') + it.label;
+        node.onclick = () => { it.run(); closeMenu(); logLine('menu', `${it.label} → ${el.label || el.type}`); };
+        ctxmenu.append(node);
+      }
+      ctxmenu.style.left = detail.client.x + 'px';
+      ctxmenu.style.top = detail.client.y + 'px';
+      ctxmenu.style.display = 'block';
+    }
+    drawer.addEventListener('element-contextmenu', (e) => openMenu(e.detail));
+
+    // ====================================================================
+    // (3) Attach a listener BY ID (the JSON gave this table id "vip-table").
+    //     Fires only for the restaurant sample where that id exists.
+    // ====================================================================
+    drawer.on('vip-table', 'click', (e) =>
+      logLine('id-listener', `⭐ "${e.element.label}" (#${e.id}) clicked — status: ${e.element.props.status}`));
+    drawer.on('vip-table', 'hover', () => logLine('id-listener', '⭐ hovering the VIP table'));
+
+    // ====================================================================
+    // (4) Floors — switch / add floors via the overlay bar.
+    // ====================================================================
+    const floorbar = document.getElementById('floorbar');
+    function renderFloorbar() {
+      const floors = drawer.getFloors();
+      const active = drawer.getActiveFloorId();
+      const editing = drawer.mode === 'edit';
+      floorbar.innerHTML = '';
+      if (floors.length <= 1 && !editing) { floorbar.style.display = 'none'; return; }
+      floorbar.style.display = 'flex';
+      for (const f of [...floors].sort((a, b) => b.level - a.level)) {
+        const b = document.createElement('button');
+        b.textContent = f.name;
+        if (f.id === active) b.className = 'active';
+        b.onclick = () => drawer.setActiveFloor(f.id);
+        floorbar.append(b);
+      }
+      if (editing) {
+        const add = document.createElement('button');
+        add.className = 'add';
+        add.textContent = '＋ Floor';
+        add.onclick = () => drawer.addFloor({ name: 'Floor ' + drawer.getFloors().length });
+        floorbar.append(add);
+      }
+    }
+
+    // ====================================================================
+    // (5) Room navigator — click a room to focus the camera on it.
+    // ====================================================================
+    const roomlist = document.getElementById('roomlist');
+    function renderRooms() {
+      const rooms = drawer.getRooms();
+      roomlist.innerHTML = '';
+      if (!rooms.length) { roomlist.innerHTML = '<span class="empty">No rooms on this floor.</span>'; return; }
+      for (const r of rooms) {
+        const b = document.createElement('button');
+        b.innerHTML = (r.type === 'floor' ? '🏠' : '⬚') + ' ' + r.label;
+        b.onclick = () => { drawer.focusElement(r.id); if (drawer.mode === 'edit') drawer.select(r.id); };
+        roomlist.append(b);
+      }
+    }
+
+    // ====================================================================
+    // (6) Import a .floorist / JSON file.
+    // ====================================================================
+    const fileInput = document.getElementById('fileInput');
+    document.getElementById('importBtn').onclick = () => fileInput.click();
+    fileInput.onchange = async () => {
+      const file = fileInput.files?.[0];
+      if (!file) return;
+      try {
+        drawer.load(JSON.parse(await file.text()));
+        logLine('import', file.name);
+      } catch (err) { logLine('error', 'import failed: ' + err.message); }
+      fileInput.value = '';
+    };
+
+    // ====================================================================
+    // (7) Share — whole building or current floor; download / clipboard /
+    //     link (#data=base64) / embed snippet. No backend involved.
+    // ====================================================================
+    const sharePanel = document.getElementById('sharePanel');
+    const shareOut = document.getElementById('shareOut');
+    const shareOk = document.getElementById('shareOk');
+    document.getElementById('shareBtn').onclick = () => {
+      const open = sharePanel.style.display === 'block';
+      sharePanel.style.display = open ? 'none' : 'block';
+      shareOut.value = ''; shareOk.textContent = '';
+    };
+    window.addEventListener('pointerdown', (e) => {
+      if (sharePanel.style.display === 'block' && !sharePanel.contains(e.target) && e.target.id !== 'shareBtn') {
+        sharePanel.style.display = 'none';
+      }
+    }, true);
+    const shareScope = () =>
+      sharePanel.querySelector('input[name=scope]:checked').value === 'floor'
+        ? drawer.model.exportFloor(drawer.getActiveFloorId())
+        : drawer.getDocument();
+    const baseUrl = () => location.href.split('#')[0];
+    sharePanel.querySelector('.actions').addEventListener('click', async (e) => {
+      const btn = e.target.closest('button[data-act]');
+      if (!btn) return;
+      const data = shareScope();
+      shareOk.textContent = '';
+      if (btn.dataset.act === 'download') {
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = (data.meta?.name || 'plan') + '.floorist.json';
+        a.click(); URL.revokeObjectURL(a.href);
+        shareOk.textContent = 'Downloaded.';
+      } else if (btn.dataset.act === 'clipboard') {
+        await navigator.clipboard.writeText(JSON.stringify(data, null, 2));
+        shareOk.textContent = 'JSON copied to clipboard.';
+      } else if (btn.dataset.act === 'link') {
+        const url = buildShareUrl(data, { baseUrl: baseUrl(), mode: 'view' });
+        shareOut.value = url;
+        try { await navigator.clipboard.writeText(url); shareOk.textContent = `Link copied (${url.length} chars).`; }
+        catch { shareOk.textContent = 'Link ready (copy below).'; }
+      } else if (btn.dataset.act === 'embed') {
+        const code = buildEmbedCode(data, { baseUrl: baseUrl() });
+        shareOut.value = code;
+        try { await navigator.clipboard.writeText(code); shareOk.textContent = 'Embed code copied.'; }
+        catch { shareOk.textContent = 'Embed ready (copy below).'; }
+      }
+      logLine('share', `${btn.dataset.act} (${sharePanel.querySelector('input[name=scope]:checked').value})`);
+    });
+
+    // keep floor bar + room list synced with the model (skip high-frequency
+    // live-drag "update" events to avoid rebuilding the lists every pointermove)
+    drawer.addEventListener('floor-change', () => { renderFloorbar(); renderRooms(); logLine('floor', drawer.getActiveFloorId()); });
+    drawer.addEventListener('change', (e) => {
+      if (e.detail?.reason === 'update') return;
+      renderFloorbar();
+      renderRooms();
+    });
+
+    // ---- boot ----
+    const shared = parseShareHash();
+    if (shared.data) {
+      drawer.load(shared.data);
+      if (shared.mode) applyMode(shared.mode);
+      logLine('load', 'from share link');
+      updateStat();
+    } else {
+      loadSample('restaurant');
+    }
+    renderFloorbar();
+    renderRooms();
+  </script>
+</body>
+</html>

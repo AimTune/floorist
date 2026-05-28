@@ -1,0 +1,9 @@
+# Source is shipped only as compiled dist/ — see package.json "files".
+src
+demo
+demo.html
+scripts
+tsconfig.json
+.gitignore
+.vscode
+*.log
