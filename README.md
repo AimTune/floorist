@@ -4,6 +4,27 @@
 ![build](https://img.shields.io/badge/build-passing-brightgreen) ![types](https://img.shields.io/badge/types-TypeScript-blue) ![license](https://img.shields.io/badge/license-MIT-blue)
 <!-- badges-end -->
 
+<!-- coverage-start -->
+
+![coverage](https://img.shields.io/badge/coverage-78.3%25-yellow)
+
+*Last updated by `npm run build` — 8 covered module(s).*
+
+| File | Lines | Branches | Functions |
+| :--- | ---: | ---: | ---: |
+| `dist/core/actions.js` | 100.0% | 84.0% | 100.0% |
+| `dist/core/geometry.js` | 100.0% | 100.0% | 100.0% |
+| `dist/core/model.js` | 97.8% | 87.0% | 92.9% |
+| `dist/core/schema.js` | 98.9% | 87.0% | 100.0% |
+| `dist/core/share.js` | 100.0% | 89.7% | 100.0% |
+| `dist/core/walls.js` | 97.6% | 95.0% | 100.0% |
+| `dist/elements/registry.js` | 47.9% | 90.0% | 21.2% |
+| `dist/render/camera.js` | 100.0% | 100.0% | 100.0% |
+| **All covered modules** | **78.3%** | **89.8%** | **80.1%** |
+
+> Files not in this table (`dist/component/`, `dist/render/`, `dist/editor/controller.js`) are browser-only — they need DOM/Canvas and are exercised by the headless smoke test, not by `npm test`.
+
+<!-- coverage-end -->
 
 A **dependency-free web component** for drawing and editing real-world floor
 plans — tables, chairs, doors, windows, A/C units, plants, entrances, custom
@@ -366,30 +387,10 @@ dependency on Jest/Vitest. Coverage is produced by Node itself
 
 ```bash
 npm test          # tsc + node --test test/
-npm run coverage  # tests with coverage + updates this README
+npm run coverage  # tests with coverage + updates the table at the top
 ```
 
-<!-- coverage-start -->
-
-![coverage](https://img.shields.io/badge/coverage-78.3%25-yellow)
-
-*Last updated by `npm run build` — 8 covered module(s).*
-
-| File | Lines | Branches | Functions |
-| :--- | ---: | ---: | ---: |
-| `dist/core/actions.js` | 100.0% | 84.0% | 100.0% |
-| `dist/core/geometry.js` | 100.0% | 100.0% | 100.0% |
-| `dist/core/model.js` | 97.8% | 87.0% | 92.9% |
-| `dist/core/schema.js` | 98.9% | 87.0% | 100.0% |
-| `dist/core/share.js` | 100.0% | 89.7% | 100.0% |
-| `dist/core/walls.js` | 97.6% | 95.0% | 100.0% |
-| `dist/elements/registry.js` | 47.9% | 90.0% | 21.2% |
-| `dist/render/camera.js` | 100.0% | 100.0% | 100.0% |
-| **All covered modules** | **78.3%** | **89.8%** | **80.1%** |
-
-> Files not in this table (`dist/component/`, `dist/render/`, `dist/editor/controller.js`) are browser-only — they need DOM/Canvas and are exercised by the headless smoke test, not by `npm test`.
-
-<!-- coverage-end -->
+See the [coverage table at the top of this README](#-floorist) for the current per-module numbers.
 
 ## Publishing
 
