@@ -1,11 +1,13 @@
 {
   "name": "floorist",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Dependency-free web component for drawing and editing real-world floor plans — multi-floor buildings, tables, chairs, doors, windows, A/C, custom images — with attachable actions, doors/windows that snap to walls, and a custom JSON format.",
   "type": "module",
   "main": "./dist/index.js",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
+  "unpkg": "./dist/floorist.global.min.js",
+  "jsdelivr": "./dist/floorist.global.min.js",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -14,7 +16,9 @@
     "./component": {
       "types": "./dist/component/floor-plan.d.ts",
       "default": "./dist/component/floor-plan.js"
-    }
+    },
+    "./global": "./dist/floorist.global.js",
+    "./global.min": "./dist/floorist.global.min.js"
   },
   "files": [
     "dist",
@@ -22,13 +26,14 @@
     "LICENSE"
   ],
   "scripts": {
-    "build": "npm run compile && npm run test:cov && node ./scripts/coverage-readme.mjs",
+    "build": "npm run compile && npm run bundle && npm run test:cov && node ./scripts/coverage-readme.mjs",
     "compile": "tsc",
+    "bundle": "node ./scripts/bundle.mjs",
     "watch": "tsc --watch",
-    "dev": "npm run compile && node ./scripts/serve.js",
+    "dev": "npm run compile && npm run bundle && node ./scripts/serve.js",
     "serve": "node ./scripts/serve.js",
     "test": "npm run compile && node --test 'test/*.test.mjs'",
-    "test:cov": "node --test --experimental-test-coverage --test-coverage-include='dist/**/*.js' --test-coverage-exclude='dist/component/**' --test-coverage-exclude='dist/render/renderer.js' --test-coverage-exclude='dist/render/shapes.js' --test-coverage-exclude='dist/editor/controller.js' --test-reporter=spec --test-reporter-destination=stdout --test-reporter=lcov --test-reporter-destination=coverage.lcov 'test/*.test.mjs'",
+    "test:cov": "node --test --experimental-test-coverage --test-coverage-include='dist/**/*.js' --test-coverage-exclude='dist/component/**' --test-coverage-exclude='dist/render/renderer.js' --test-coverage-exclude='dist/render/shapes.js' --test-coverage-exclude='dist/editor/controller.js' --test-coverage-exclude='dist/floorist.global*.js' --test-reporter=spec --test-reporter-destination=stdout --test-reporter=lcov --test-reporter-destination=coverage.lcov 'test/*.test.mjs'",
     "coverage": "npm run compile && npm run test:cov && node ./scripts/coverage-readme.mjs",
     "clean": "rm -rf dist coverage.lcov",
     "prepublishOnly": "npm run clean && npm run build"
@@ -58,9 +63,12 @@
     "url": "https://github.com/AimTune/floorist/issues"
   },
   "sideEffects": [
-    "./dist/component/floor-plan.js"
+    "./dist/component/floor-plan.js",
+    "./dist/floorist.global.js",
+    "./dist/floorist.global.min.js"
   ],
   "devDependencies": {
+    "esbuild": "^0.28.0",
     "typescript": "^6.0.3"
   }
 }

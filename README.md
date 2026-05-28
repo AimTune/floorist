@@ -61,6 +61,43 @@ import 'floorist/component';
 import { FloorPlanModel, registerType, registerActionHandler } from 'floorist';
 ```
 
+### CDN / single `<script>` tag (no build, no bundler)
+
+Drop this on any HTML page — `<floor-plan>` registers itself and the helpers
+live on `window.Floorist`:
+
+```html
+<floor-plan id="plan" style="width:800px;height:480px"></floor-plan>
+
+<!-- one tag, no type="module" — works in any browser -->
+<script src="https://cdn.jsdelivr.net/npm/floorist/dist/floorist.global.min.js"></script>
+<script>
+  document.getElementById('plan').load(myBuilding);
+  // optional: extend the registry
+  Floorist.registerType({ type: 'piano', category: 'furniture', label: 'Piano',
+    defaults: { width: 120, height: 70, style: { fill: '#222' } },
+    draw(ctx, el) { ctx.fillStyle = el.style.fill; ctx.fillRect(0, 0, el.width, el.height); } });
+</script>
+```
+
+Prefer ESM? Use the source modules directly:
+
+```html
+<script type="module">
+  import 'https://cdn.jsdelivr.net/npm/floorist/dist/index.js';
+  document.querySelector('floor-plan').load(myBuilding);
+</script>
+```
+
+| File                                | What                                   | Size (≈) |
+|-------------------------------------|----------------------------------------|---------:|
+| `dist/index.js`                     | ESM entry — `import 'floorist'`        |    1 KB  |
+| `dist/floorist.global.js`           | IIFE bundle, readable                  |   85 KB  |
+| `dist/floorist.global.min.js`       | IIFE bundle, minified (production)     |   48 KB  |
+
+Pin a version (`floorist@0.2.2`) on CDN URLs for production; the unpinned form
+above resolves to the latest published release.
+
 ## The `<floor-plan>` element
 
 ### Attributes
