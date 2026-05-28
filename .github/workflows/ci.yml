@@ -16,7 +16,9 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        node: ['20', '22', '24']
+        # Node 22+ is required for `--test-coverage-include`/`--exclude`. The
+        # published library is browser-only — consumer Node version doesn't matter.
+        node: ['22', '24']
     steps:
       - uses: actions/checkout@v4
 
