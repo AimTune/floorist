@@ -1,0 +1,81 @@
+name: Deploy demo to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# Only one Pages deploy at a time. cancel-in-progress: false lets an in-flight
+# deploy finish before the next one starts — Pages deploys are short-lived and
+# we don't want to leave the live site half-deployed by killing one mid-upload.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  build:
+    name: Build static site
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Minimal build for the demo: tsc → dist/, then the global IIFE bundle.
+      # We deliberately skip `npm run build` because it also runs test:cov +
+      # coverage-readme, which is slow and irrelevant to a static deploy.
+      - name: Compile TypeScript
+        run: npm run compile
+
+      - name: Bundle global build
+        run: npm run bundle
+
+      # Stage the site in _site/ with an explicit allowlist so we never
+      # accidentally upload test/, src/, node_modules/, etc. demo.html is
+      # renamed to index.html so the site is served at the root.
+      - name: Assemble Pages artifact
+        run: |
+          set -euo pipefail
+          rm -rf _site
+          mkdir -p _site
+          cp demo.html _site/index.html
+          cp -R dist _site/dist
+          cp -R demo _site/demo
+          # Belt-and-braces CNAME alongside the repo Settings → Pages config.
+          # If a future maintainer toggles the Pages UI off and back on, this
+          # file keeps the custom domain pinned.
+          echo 'floorist.aimtune.dev' > _site/CNAME
+          # Tell Pages not to run Jekyll, so files/dirs starting with _ are
+          # served verbatim and we keep deploy time minimal.
+          touch _site/.nojekyll
+          echo '--- artifact contents ---'
+          find _site -maxdepth 2 -print
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    name: Deploy to GitHub Pages
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v4
