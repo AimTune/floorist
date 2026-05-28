@@ -44,33 +44,5 @@ jobs:
       - name: Sanity-check package contents
         run: npm pack --dry-run
 
-      # Diagnostic: print the OIDC token's `sub`/claim shape so we can compare
-      # it against the npm Trusted Publisher config. Safe — only claims, no
-      # signature is printed. Remove once publishing is stable.
-      - name: Debug — print OIDC token claims (no signature)
-        run: |
-          TOKEN=$(curl -sS \
-            -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
-            "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=npm:registry.npmjs.org" \
-            | python3 -c "import json,sys;print(json.load(sys.stdin)['value'])")
-          CLAIMS_B64=$(echo -n "$TOKEN" | cut -d. -f2)
-          # base64url → base64 (pad)
-          PAD=$(( 4 - ${#CLAIMS_B64} % 4 ))
-          if [ $PAD -lt 4 ]; then CLAIMS_B64="${CLAIMS_B64}$(printf '=%.0s' $(seq 1 $PAD))"; fi
-          CLAIMS_B64=$(echo -n "$CLAIMS_B64" | tr '_-' '/+')
-          echo "$CLAIMS_B64" | base64 -d | python3 -c "
-          import json, sys
-          c = json.load(sys.stdin)
-          want = ['sub', 'aud', 'repository', 'repository_owner', 'workflow', 'workflow_ref', 'environment', 'ref', 'ref_type', 'event_name']
-          print('--- OIDC claims that the npm Trusted Publisher matches against ---')
-          for k in want:
-              print(f'  {k}: {c.get(k)!r}')
-          print()
-          print('Trusted publisher must match (case-sensitive):')
-          print(f'  repository == {c.get(\"repository\")!r}  (npm config: aimtune/floorist)')
-          print(f'  environment == {c.get(\"environment\")!r}  (npm config: NPM_TOKEN)')
-          print(f'  workflow file in workflow_ref == publish.yml')
-          "
-
       - name: Publish (OIDC trusted publisher)
         run: npm publish --access public --provenance
